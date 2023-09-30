@@ -34,8 +34,9 @@ mem_free(void *addr, const bool trace_ena)
 		rte_eal_trace_mem_free(addr);
 
 	if (addr == NULL) return;
-	if (malloc_heap_free(malloc_elem_from_data(addr)) < 0)
-		RTE_LOG(ERR, EAL, "Error: Invalid memory\n");
+	malloc_heap_free(malloc_elem_from_data(addr));
+	// if (malloc_heap_free(malloc_elem_from_data(addr)) < 0)
+	// 	RTE_LOG(ERR, EAL, "Error: Invalid memory\n");
 }
 
 void
@@ -657,7 +658,10 @@ rte_malloc_heap_destroy(const char *heap_name)
 	/* sanity checks done, now we can destroy the heap */
 	rte_spinlock_lock(&heap->lock);
 	ret = malloc_heap_destroy(heap);
-	rte_spinlock_unlock(&heap->lock);
+
+	/* if we failed, lock is still active */
+	if (ret < 0)
+		rte_spinlock_unlock(&heap->lock);
 unlock:
 	rte_mcfg_mem_write_unlock();
 
